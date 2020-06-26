@@ -564,9 +564,9 @@ void McastApp::recv_find_msg(const string & src_ip){
 
 	// 保存密钥
 	
-	group_members[ip].first =pub_key;
+	group_members[src_ip].first =pub_key;
 
-	group_members[ip].second = pri_key;
+	group_members[src_ip].second = pri_key;
 	cout<<"将该成员加入组"<<endl;
 }
 
