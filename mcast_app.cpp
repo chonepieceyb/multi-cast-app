@@ -583,6 +583,7 @@ void McastApp::recv_update_msg(const string& src_ip){
 		// 把 socket缓冲区剩下的内容读出来之后不做事了
 		recv_socket.mrecvfrom(recv_buffer,pub_key_length,from);
 		memset(recv_buffer,0,buffer_size);		
+		return ;
 	}
 	cout<<"收到来自:"<<src_ip<<"的更新key"<<endl;
 	memset(recv_buffer,0,head_size);
@@ -655,17 +656,18 @@ void control( const string& lip,const string& group_ip, unsigned short send_port
 				break;
 			case 'D' :
 				cout<<"请输入待删除成员的ip"<<endl;
-				cin>>arg;
+//				cin>>arg;
+				getline(cin,arg); cin.get();
 				app.delete_members(arg);
 				break;
 			case 'F' :
 				cout<<"请输入待发送文件的路径"<<endl;
-				cin>>arg;
+				getline(cin,arg); cin.get();
 				app.send_file(arg);
 				break;
 			case 'S' :
 				cout<<"请输入待发送的消息"<<endl;
-				cin>>arg;
+				getline(cin,arg); cin.get();
 				app.send_message(arg);
 				break;
 			case 'Q' :
