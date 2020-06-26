@@ -657,17 +657,18 @@ void control( const string& lip,const string& group_ip, unsigned short send_port
 			case 'D' :
 				cout<<"请输入待删除成员的ip"<<endl;
 //				cin>>arg;
-				getline(cin,arg); cin.get();
+				cin.get();getline(cin,arg); 
 				app.delete_members(arg);
 				break;
 			case 'F' :
 				cout<<"请输入待发送文件的路径"<<endl;
-				getline(cin,arg); cin.get();
+				cin.get();getline(cin,arg); 
 				app.send_file(arg);
 				break;
 			case 'S' :
 				cout<<"请输入待发送的消息"<<endl;
-				getline(cin,arg); cin.get();
+				cin.get();getline(cin,arg); 
+				cout<<arg<<endl;
 				app.send_message(arg);
 				break;
 			case 'Q' :
