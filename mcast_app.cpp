@@ -110,10 +110,11 @@ McastApp::McastApp(const string& lip,const string& group_ip, const unsigned shor
 	
 		// 设置 sock的TTL 和 超时时间
 		send_socket.set_mtt(TTL);
-		recv_socket.setTimeOut(3,0);   //设置超时3秒
+		recv_socket.setTimeOut(10,0);   //设置超时10秒
 		
-		// 发送 find包
-		
+		// 关闭 loop
+		recv_socket.set_loop(false);
+		send_socket.set_loop(false);
 	
 }	
 
@@ -249,7 +250,7 @@ int McastApp::send_file(const string& filepath){
 		left-=buffer_size;
 		//延迟发送防止丢包
 		
-		usleep(500);   //延迟 0.5 ms 发送包 防止接收方溢出
+		usleep(1000);   //延迟 1 ms 发送包 防止接收方溢出
 	}
 	memset(send_buffer,0,buffer_size);
 	memset(en_buffer,0,buffer_size);
@@ -415,6 +416,14 @@ int McastApp::recv_file( string& dir_path, const string& from_ip){
 	while(left>=buffer_size){
 		size_t recv_this_time = recv_socket.mrecvfrom(recv_buffer,buffer_size,from);
 		// 解密
+		if(recv_this_time == -2){
+			cout<<"发生丢包了"<<endl;
+			return -1;
+		}else if(recv_this_time ==-1){
+			cout<<"传输错误"<<endl;
+			return -1;
+		}
+
 		des(recv_buffer, recv_this_time,en_buffer,key,1,result_length);
 	        WriteBlock(new_file_fd,en_buffer,recv_this_time);
 		memset(recv_buffer,0,buffer_size);	
@@ -428,7 +437,16 @@ int McastApp::recv_file( string& dir_path, const string& from_ip){
 		if(left<= buffer_size - 8){
 			// 要先计算加密后的大小
 			recv_this_time = ceil(float(left)/8)*8;
-			recv_socket.mrecvfrom(recv_buffer,recv_this_time,from); // 读最后的数据
+			recv_this_time = recv_socket.mrecvfrom(recv_buffer,recv_this_time,from); // 读最后的数据
+			if(recv_this_time == -2){
+				cout<<"发生丢包了"<<endl;
+				return -1;
+			}else if(recv_this_time ==-1){
+				cout<<"传输错误"<<endl;
+				return -1;
+			}
+
+
 			// 解密
 			des(recv_buffer,recv_this_time,en_buffer,key,1,result_length);
 
@@ -440,7 +458,16 @@ int McastApp::recv_file( string& dir_path, const string& from_ip){
 			cout<<"情况2"<<endl;
 			// 否则因为buffer不够，需要分两次发送
 			recv_this_time= floor(float(left)/8)*8;
-			recv_socket.mrecvfrom(recv_buffer,recv_this_time,from); // 读最后的数据
+			recv_this_time =recv_socket.mrecvfrom(recv_buffer,recv_this_time,from); // 读最后的数据
+			if(recv_this_time == -2){
+			cout<<"发生丢包了"<<endl;
+				return -1;
+			}else if(recv_this_time ==-1){
+				cout<<"传输错误"<<endl;
+				return -1;
+			}
+
+
 			// 解密
 			des(recv_buffer,recv_this_time,en_buffer,key,1,result_length);
 
@@ -678,7 +705,6 @@ void control( const string& lip,const string& group_ip, unsigned short send_port
 			case 'S' :
 				cout<<"请输入待发送的消息"<<endl;
 				cin.get();getline(cin,arg); 
-				cout<<arg<<endl;
 				app.send_message(arg);
 				break;
 			case 'Q' :

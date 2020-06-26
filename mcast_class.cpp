@@ -130,8 +130,8 @@ ssize_t mcast_socket::mrecvfrom(void* buf, const size_t bytes, SESS_T& from){
 	ssize_t recved =  Recvfrom(sockfd,buf,bytes,&from_addr,&length);
 
 	if(recved<0){
-		if(recved ==EWOULDBLOCK || recved == EAGAIN){
-			cout<<"发生丢包"<<endl;
+		if(errno ==EWOULDBLOCK || errno == EAGAIN){
+			return -2;
 		}else{
 			return -1;
 		}
