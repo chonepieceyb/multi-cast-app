@@ -520,7 +520,16 @@ void McastApp::update_des(const string& dest_ip,const string& key){
 	// 在头部加入目的 ip 32 位 4 个字节
 	
 	inet_pton(AF_INET,dest_ip.c_str(),offset);	
+	offset+=4;
+
+	// 发送秘文长度
+	// 对密钥公钥加密
+
+	string en_des_key = rsa_pub_encrypt(key, group_members[dest_ip].second);
 	
+	unsigned short en_length= en_des_key.size();
+	memcpy(offset,&en_length,sizeof(en_length));   // 2 个字节
+
 	// 发送头文件
 	send_socket.msendto(send_buffer,head_size);
 	memset(send_buffer,0,head_size);
@@ -529,16 +538,12 @@ void McastApp::update_des(const string& dest_ip,const string& key){
 	
 	// 对des密钥 进行加密
 	
-	
-	// 对密钥公钥加密
-
-	string en_des_key = rsa_pub_encrypt(des_key, group_members[dest_ip].second);
-	// 发送加密后的密钥
-	
-	memcpy(send_buffer,en_des_key.c_str(),pub_key_length);  // 不包含 '\0'
+	// 发送加密后的密钥,长度由 en_length 指定
+	memcpy(send_buffer,en_des_key.c_str(),en_length);  // 不包含 '\0'
 
 	// 发送数据
-	send_socket.msendto(send_buffer,pub_key_length);
+	send_socket.msendto(send_buffer,en_length);
+	memset(send_buffer,0,buffer_size);
 }
 
 
@@ -585,21 +590,26 @@ void McastApp::recv_update_msg(const string& src_ip){
 		memset(recv_buffer,0,buffer_size);		
 		return ;
 	}
+	offset+=sizeof(local_ip);
 	cout<<"收到来自:"<<src_ip<<"的更新key"<<endl;
+
+	// 获取密文长度
+	unsigned short en_length;
+	memcpy(&en_length,offset,sizeof(en_length));
 	memset(recv_buffer,0,head_size);
 	// data部分
 	
 	// 需要取出密钥
-	char* de_ckey = new char[pub_key_length+1] ;
-	de_ckey[pub_key_length] = '\0';
+	char* de_ckey = new char[en_length+1] ;
+	de_ckey[en_length] = '\0';
 
-	recv_socket.mrecvfrom(recv_buffer,pub_key_length,from);  // 接收密钥
+	recv_socket.mrecvfrom(recv_buffer,en_length,from);  // 接收密钥
 
-	memcpy(de_ckey, recv_buffer,pub_key_length);
+	memcpy(de_ckey, recv_buffer,en_length);
 	string de_key = de_ckey;
-	// 解密,并更新密钥
-	group_members[src_ip].second = rsa_pri_decrypt(de_key,rsa_pri_key);
 
+	// 解密,并更新密钥
+	group_members[src_ip].first = rsa_pri_decrypt(de_key,rsa_pri_key);
 	memset(recv_buffer,0,pub_key_length);
 }
 
